@@ -86,8 +86,23 @@ def download_video(url, out_dir, max_h, cookies_path=None, on_progress=None):
     }
     if cookies_path:
         opts["cookiefile"] = cookies_path
-    with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=True)
+    info, last_err = None, None
+    for clients in (None, ["tv"], ["ios"], ["android"], ["web_safari"], ["mweb"]):
+        try:
+            o2 = dict(opts)
+            if clients:
+                o2["extractor_args"] = {"youtube": {"player_client": clients}}
+            for f in out_dir.glob("source.*"):
+                f.unlink(missing_ok=True)
+            with yt_dlp.YoutubeDL(o2) as ydl:
+                info = ydl.extract_info(url, download=True)
+            break
+        except Exception as e:
+            last_err = e
+    if info is None:
+        raise RuntimeError(
+            f"{last_err}\n\nYouTube ने इस सर्वर को ब्लॉक किया है (403)। हल: साइडबार में cookies.txt दें, "
+            "या वीडियो खुद डाउनलोड करके 'अपनी वीडियो फाइल' टैब में अपलोड करें।")
     files = sorted(out_dir.glob("source.*"))
     if not files:
         raise RuntimeError("डाउनलोड फेल हो गया")
