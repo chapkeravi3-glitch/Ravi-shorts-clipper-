@@ -1,0 +1,5 @@
+streamlit>=1.36
+yt-dlp
+faster-whisper
+numpy
+requests
